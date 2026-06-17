@@ -24,16 +24,19 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB Cloud Cluster Connected Successfully...'))
     .catch(err => console.error('Database connection exception:', err));
 
-// 📧 NODEMAILER DISPATCH MAIL CARRIER TRANSPORTER
+// 📧 NODEMAILER DISPATCH MAIL CARRIER TRANSPORTER (Optimized for Render Cloud)
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Use true for port 465 (SSL)
+    port: 587,
+    secure: false, // Must be false for port 587 (Upgrades automatically via STARTTLS)
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS, // Reads the 16-character App Password securely from environment
     },
+    tls: {
+        rejectUnauthorized: false // Prevents cloud network handshake blocks on hosted environments
+    }
 });
 
 // Always verify the connection configuration on startup
@@ -117,13 +120,12 @@ const generateTokens = (user) => {
 };
 
 const setCookies = (res, accessToken, refreshToken) => {
-    // Check if the current context environment is running inside Render production cloud
     const isProduction = process.env.NODE_ENV === 'production';
 
     res.cookie('accessToken', accessToken, {
         httpOnly: true,
-        secure: isProduction, // Automatically flags true for HTTPS deployment contexts
-        sameSite: isProduction ? 'none' : 'lax', // Handles cross-site token context policies correctly
+        secure: isProduction,               
+        sameSite: isProduction ? 'none' : 'lax', 
         maxAge: 15 * 60 * 1000
     });
     res.cookie('refreshToken', refreshToken, {
